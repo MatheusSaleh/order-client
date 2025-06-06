@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: order-client
+
+grpc:
+  client:
+    orderService:
+      address: 'static://localhost:9090'
+      negotiationType: plaintext
