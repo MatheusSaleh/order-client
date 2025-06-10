@@ -5,6 +5,7 @@ import br.com.exemplo.grpc.OrderRequest;
 import br.com.exemplo.grpc.OrderResponse;
 import br.com.exemplo.grpc.OrderServiceGrpc;
 import com.example.order_client.dto.OrderRequestDto;
+import com.example.order_client.dto.OrderResponseDto;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +24,7 @@ public class OrderRestController {
     private OrderServiceGrpc.OrderServiceBlockingStub orderServiceStub;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> placeOrder(@RequestBody OrderRequestDto orderRequestDto){
+    public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody OrderRequestDto orderRequestDto){
         OrderRequest orderRequest = OrderRequest.newBuilder()
                 .setOrderId(orderRequestDto.getOrderId())
                 .setCustomerName(orderRequestDto.getCustomerName())
@@ -39,6 +40,12 @@ public class OrderRestController {
                 .build();
 
         OrderResponse orderResponse = orderServiceStub.placeOrder(orderRequest);
-        return ResponseEntity.ok(orderResponse);
+
+        OrderResponseDto responseDto = new OrderResponseDto();
+        responseDto.setOrderId(orderResponse.getOrderId());
+        responseDto.setStatus(orderResponse.getStatus());
+        responseDto.setMessage(orderResponse.getMessage());
+
+        return ResponseEntity.ok(responseDto);
     }
 }

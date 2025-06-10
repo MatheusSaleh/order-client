@@ -5,5 +5,5 @@ spring:
 grpc:
   client:
     orderService:
-      address: 'static://localhost:9090'
+      address: 'static://localhost:8081'
       negotiationType: plaintext
