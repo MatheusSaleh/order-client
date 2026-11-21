@@ -1,51 +1,38 @@
 package com.example.order_client.order.controller;
 
-import br.com.exemplo.grpc.OrderItem;
-import br.com.exemplo.grpc.OrderRequest;
-import br.com.exemplo.grpc.OrderResponse;
-import br.com.exemplo.grpc.OrderServiceGrpc;
 import com.example.order_client.dto.OrderRequestDto;
 import com.example.order_client.dto.OrderResponseDto;
-import net.devh.boot.grpc.client.inject.GrpcClient;
+import com.example.order_client.dto.OrderStatusDto;
+import com.example.order_client.order.service.OrderGatewayService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.stream.Collectors;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class OrderRestController {
 
-    @SuppressWarnings("unused")
-    @GrpcClient("orderService")
-    private OrderServiceGrpc.OrderServiceBlockingStub orderServiceStub;
+    private final OrderGatewayService gateway;
 
     @PostMapping
-    public ResponseEntity<OrderResponseDto> placeOrder(@RequestBody OrderRequestDto orderRequestDto){
-        OrderRequest orderRequest = OrderRequest.newBuilder()
-                .setOrderId(orderRequestDto.getOrderId())
-                .setCustomerName(orderRequestDto.getCustomerName())
-                .addAllItems(orderRequestDto.getItems().stream().map(item ->
-                        OrderItem.newBuilder()
-                                .setProductId(item.getProductId())
-                                .setProductName(item.getProductName())
-                                .setQuantity(item.getQuantity())
-                                .setPrice(item.getPrice())
-                                .build()).collect(Collectors.toList()))
-                .setTotalAmount(orderRequestDto.getTotalAmount())
-                .setTimestamp(orderRequestDto.getTimestamp())
-                .build();
+    public ResponseEntity<OrderResponseDto> placeOrder(@Valid @RequestBody OrderRequestDto request) {
+        return ResponseEntity.accepted().body(gateway.placeOrder(request));
+    }
 
-        OrderResponse orderResponse = orderServiceStub.placeOrder(orderRequest);
-
-        OrderResponseDto responseDto = new OrderResponseDto();
-        responseDto.setOrderId(orderResponse.getOrderId());
-        responseDto.setStatus(orderResponse.getStatus());
-        responseDto.setMessage(orderResponse.getMessage());
-
-        return ResponseEntity.ok(responseDto);
+    @GetMapping("/{orderId}")
+    public OrderStatusDto getStatus(@PathVariable String orderId) {
+        if (!orderId.matches("^[A-Za-z0-9-]{1,64}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "orderId invalido");
+        }
+        return gateway.getStatus(orderId);
     }
 }
